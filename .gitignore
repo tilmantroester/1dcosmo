@@ -3,8 +3,11 @@ data/
 # output files
 output/
 
+vlafroid/
+
 # Scratchbook files
 scratchbook/
+notes/
 
 # VS CODE
 .vscode/
