@@ -20,7 +20,7 @@ pi = np.pi
 def run_sim(config):
     particles = cosmology.ParticleDistribution(**config["N-body config"])
     np.random.seed(config["seed"])
-    particles.create_initial_conditions_CDM(utils.interpolated_powerspectrum_from_file("data/ps_lin_z=0.txt"), config["a_min"])
+    particles.create_initial_conditions_CDM(utils.interpolated_powerspectrum_from_file(config["initial_power_spectrum"]), config["a_min"])
 
     snapshots = {"snapshots" : cosmology.ParticleSnapshots(particles,
                                                         **config["snapshot config"])}
@@ -73,7 +73,7 @@ if __name__ == "__main__":
                         phases=False,
                         halos=False,
                         keep_in_memory=False,
-                        output_directory="/data2/tilman/1dcosmo/output/snapshots/",
+                        output_directory="/data2/tilman/1dcosmo/output/snapshots_L50000/",
                         phase_space_filename_format="run{run_id}_L{L:.0f}_n{n_particle:.1e}_z{z:.3f}_phase_space",
                         density_filename_format="run{run_id}_L{L:.0f}_n{n_particle:.1e}_z{z:.3f}_density",
                         power_spectrum_filename_format="run{run_id}_L{L:.0f}_n{n_particle:.1e}_z{z:.3f}_power_spectrum",
@@ -97,13 +97,13 @@ if __name__ == "__main__":
                         "a_max" : a_max,
                         "n_timestep" : n_timestep,
                         "snapshot z" : snapshot_z,
+                        "initial_power_spectrum" : "data/ps_lin_z0.0.txt",
                         "verbose" : True})
 
     print("Running {} simulations.".format(n_sims))
     print("Using {} CPUs.".format(n_cpu))
 
-    pool =  Pool(n_cpu, maxtasksperchild=1)
-    pool.imap_unordered(run_sim, configs)
-    pool.close()
-    pool.join()
+    with Pool(n_cpu, maxtasksperchild=1) as pool:
+        result = pool.map_async(run_sim, configs)
+        result.get()
 

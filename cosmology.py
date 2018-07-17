@@ -602,9 +602,14 @@ class ParticleSnapshots:
         self.Hubble = np.zeros(n_snapshot)
         self.growth_rate = np.zeros(n_snapshot)
 
+        self.phase_space = None
+        self.density = None
+        self.power_spectrum = None
+        self.linear_power_spectrum = None
+        
         if phase_space:
             self.particle_downsampling = particle_downsampling
-            self.phase_space = np.zeros((self.n_snapshot, 2, particles.n_particle // particle_downsampling), dtype=particles.x.dtype)
+            self.phase_space = np.zeros((self.n_snapshot, 2, particles.n_particle // particle_downsampling), dtype=particles.x.dtype)            
         if density:
             self.density_downsampling = density_downsampling
             self.density = np.zeros((self.n_snapshot, particles.n_grid // density_downsampling), dtype=particles.density.dtype)

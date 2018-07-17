@@ -46,10 +46,12 @@ def create_Gaussian_field_1d(P, n_grid, box_size, mean=0, output_FT=False, preci
     
     k_min = 2*pi/(box_size/n_grid)
     V = box_size/(n_grid)**2
-    P_grid = P(k_grid*k_min)
-    P_grid[k_grid==0] = mean
+    P_grid = np.atleast_1d(P(k_grid*k_min))
     m_ft = np.random.normal(scale=np.sqrt(1/V*P_grid))*np.exp(2j*pi*np.random.random(k_grid.shape))
-    m_ft[k_grid == 0] = 0
+    if mean != 0:
+        m_ft[k_grid == 0] = mean
+    else:
+        m_ft[k_grid == 0] = np.random.normal(scale=np.sqrt(1/V*P_grid[k_grid==0]))
     m = np.fft.irfft(m_ft)
     if output_FT:
         return m, m_ft, k_grid*k_min
@@ -88,12 +90,18 @@ def calculate_pseudo_P_k_1d(m1, m2, box_size, n_k_bin=None, k_min=None, k_max=No
         bin_idx = np.searchsorted(k_grid, bin_edges)
 
         for i in range(n_bin):
-            P = m1m2[bin_idx[i]:bin_idx[i+1]]
-            Pk_real[i] = np.mean(P.real)
-            Pk_imag[i] = np.mean(P.imag)
-            Pk_err[i] = np.std(P.real)/len(P)
-            k_mean[i] = np.mean(k_grid[bin_idx[i]:bin_idx[i+1]])
-            n_mode[i] = len(P)
+            if bin_idx[i+1] - bin_idx[i] == 0:
+                if logspaced:
+                    k_mean[i] = np.sqrt(bin_edges[i]*bin_edges[i+1])
+                else:
+                    k_mean[i] = (bin_edges[i]+bin_edges[i+1])/2
+            else:
+                P = m1m2[bin_idx[i]:bin_idx[i+1]]
+                Pk_real[i] = np.mean(P.real)
+                Pk_imag[i] = np.mean(P.imag)
+                Pk_err[i] = np.sqrt(np.var(P.real)/len(P))
+                k_mean[i] = np.mean(k_grid[bin_idx[i]:bin_idx[i+1]])
+                n_mode[i] = len(P)
     
     V = box_size/(m1.shape[0])**2
     return Pk_real*V, Pk_err*V, k_mean*k_min_box, bin_edges*k_min_box, n_mode
@@ -108,6 +116,10 @@ def interpolated_powerspectrum_from_file(filename):
         return P_k
 
     return P
+
+def correlation_coefficient(cov):
+    s = np.diag(1/np.sqrt(np.diag(cov)))
+    return s @ cov @ s
 
 def subplot_colorbar(im, axes, **kwargs):
     cax = mpl_toolkits.axes_grid1.make_axes_locatable(axes).append_axes("right", size = "5%", pad = 0.05)
